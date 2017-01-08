@@ -1,0 +1,51 @@
+{
+  "name": "ptt-binding",
+  "version": "0.0.0",
+  "description": "ptt-binding",
+  "license": "MIT",
+  "author": "Roman Samec",
+  "homepage": "https://github.com/rsamec/ptt-binding",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rsamec/ptt-binding.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rsamec/ptt-binding/issues"
+  },
+  "keywords": [
+    ""
+  ],
+  "files": [
+    "lib"
+  ],
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.45",
+    "@types/node": "6.0.31",
+    "freezer-js": "^0.11.2",
+    "lodash": "^4.17.4",
+    "mobx": "^2.7.0",
+    "react-binding": "^0.8.0"
+  },
+  "devDependencies": {
+    "@types/chai": "3.4.30",
+    "@types/mocha": "2.2.29",
+    "chai": "3.5.0",
+    "del": "^2.2.1",
+    "dotbin": "^1.0",
+    "gulp": "^3.9.0",
+    "gulp-help": "^1.6.0",
+    "gulp-mocha": "^3.0.0",
+    "gulp-tslint": "^6.0",
+    "ts-node": "^1.2.2",
+    "tslint": "3.14.0-dev.1",
+    "typescript": "2.1.4"
+  },
+  "engines": {
+    "node": ">=4.0.0"
+  }
+}
