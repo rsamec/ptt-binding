@@ -29,7 +29,7 @@
     "freezer-js": "^0.11.2",
     "lodash": "^4.17.4",
     "mobx": "^2.7.0",
-    "react-binding": "^0.8.0"
+    "react-binding": "^0.8.2"
   },
   "devDependencies": {
     "@types/chai": "3.4.30",

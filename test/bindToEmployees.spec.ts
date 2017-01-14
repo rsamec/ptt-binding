@@ -10,7 +10,8 @@ import * as _ from 'lodash';
 import * as chai from "chai";
 const expect = chai.expect;
 
-var Binder: Bind.BinderStatic = require('react-binding/lib/MobxBinder').default;
+const Binder: Bind.BinderStatic = require('react-binding/lib/MobxBinder').default;
+const SimpleBinder: Bind.BinderStatic = require('react-binding').default;
 import { initBindings, freezerCursor, simpleCursor } from "../src/index";
 
 var Binder2: Bind.BinderStatic = require('react-binding').default;
@@ -21,6 +22,7 @@ const CONTAINER_PATH = ["containers", 0, "boxes"];
 const EMPLOYEE_LIST = ["containers", 1, "containers",0];
 const EMPLOYEE_LIST_FIRST_ROW = EMPLOYEE_LIST.concat(["containers",0]);
 const EMPLOYEE_LIST_FIRST_ROW_FULL_NAME = EMPLOYEE_LIST_FIRST_ROW.concat(["boxes",3,"props","content"]);
+const EMPLOYEE_LIST_FIRST_ROW_FULL_NAME_SHARED_CONVERTER = EMPLOYEE_LIST_FIRST_ROW.concat(["boxes",4,"props","content"]);
 
 const EMPLOYEE_LENGTH_PATH = CONTAINER_PATH.concat([0, "props", "content"]);
 
@@ -41,13 +43,14 @@ describe('employees repeater binding', () => {
       var lastName = Binder.bindTo(person, "LastName");
       
       //exec
-      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,reaction);
+      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,Binder,reaction);
 
       
       //verify
       var newState = frozenSchema.get();
 
-     
+      expect(_.get(newState, EMPLOYEE_LIST_FIRST_ROW_FULL_NAME)).to.equal("Roman Samec");
+      expect(_.get(newState, EMPLOYEE_LIST_FIRST_ROW_FULL_NAME_SHARED_CONVERTER)).to.equal("Roman Samec");
       expect(_.get(newState, EMPLOYEE_LENGTH_PATH)).to.equal(1);
     });
 
@@ -60,11 +63,14 @@ describe('employees repeater binding', () => {
       var row = employees.items[0];
 
       //exec
-      initBindings(new simpleCursor<PTT.Container>(frozenSchema), frozenSchema, dataContext);
+      initBindings(new simpleCursor<PTT.Container>(frozenSchema), frozenSchema, dataContext,SimpleBinder);
 
       //verify
       var newState = frozenSchema;
 
+      
+      expect(_.get(newState, EMPLOYEE_LIST_FIRST_ROW_FULL_NAME)).to.equal("Roman Samec");
+      expect(_.get(newState, EMPLOYEE_LIST_FIRST_ROW_FULL_NAME_SHARED_CONVERTER)).to.equal("Roman Samec");
       expect(_.get(newState, EMPLOYEE_LENGTH_PATH)).to.equal(1);
     });
 
@@ -83,6 +89,7 @@ describe('employees repeater binding', () => {
           //verify
           //console.log(JSON.stringify(_.get(newState,EMPLOYEE_LIST_FIRST_ROW),null,2));
           expect(_.get(newState, EMPLOYEE_LIST_FIRST_ROW_FULL_NAME)).to.equal("Roman Call");
+          expect(_.get(newState, EMPLOYEE_LIST_FIRST_ROW_FULL_NAME_SHARED_CONVERTER)).to.equal("Roman Call");
           expect(_.get(newState, EMPLOYEE_LENGTH_PATH)).to.equal(2);
 
           done();
@@ -100,7 +107,7 @@ describe('employees repeater binding', () => {
       var addresses = Binder.bindArrayTo(person, "Addresses");
 
       //exec
-      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,reaction);
+      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,Binder,reaction);
       //console.log("-------------------- after bindings ---------------")
 
       lastName.value = "Call"

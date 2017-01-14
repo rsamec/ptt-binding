@@ -93,8 +93,6 @@ var simpleCursor = require('ptt-binding').simpleCursor;
 var schema = {}
 var data = {}
 
-var dataContext = Binder.bindTo(data);
-
 //exec
-initBindings(new simpleCursor(schema), schema, dataContext);
+initBindings(new simpleCursor(schema), schema, Binder.bindTo(data));
 ```

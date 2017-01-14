@@ -105,6 +105,19 @@
                                     }
                                 }
                             }
+                        },
+                        {
+                            "elementName": "Core.TextContent",
+                            "bindings": {
+                                "content": {
+                                    "path": "Person",
+                                    "mode": "OneWay",
+                                    "converter": {
+                                        "code": "return \"convertToFullName\";",
+                                        "compiled": "(function () {\n  return \"convertToFullName\";\n})();"
+                                    }
+                                }
+                            }
                         }
                     ]
                 },
@@ -193,6 +206,12 @@
                     }
                 }
             ]
+        },
+        "context": {
+            "code": {
+                "code": "return {\n      convertToFullName: { format: function(input,args) {\n        if (input === undefined) return;\n        return input.FirstName + \" \" + input.LastName\n      }}      \n}",
+                "compiled": "(function () {\n  return {\n    convertToFullName: { format: function (input, args) {\n        if (input === undefined) return;\n        return input.FirstName + \" \" + input.LastName;\n      } }\n  };\n})();"
+            }
         }
     }
 }

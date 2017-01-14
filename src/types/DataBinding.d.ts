@@ -1,22 +1,25 @@
 declare namespace Bind {
 
     export interface BinderStatic {
-        bindToState?(data: any, key: string, path?: string, converter?: IValueConverter, converterParams?: any): Binding;
-        bindTo(parent: any, path?: string, converter?: IValueConverter, converterParams?: any): Binding;
-        bindArrayToState?(data: any, key: string, path?: string, converter?: IValueConverter, converterParams?: any): ArrayBinding;
-        bindArrayTo(parent: any, path?: string, converter?: IValueConverter, converterParams?: any): ArrayBinding;
+        bindToState?(data, key: string, path?: string, converter?: IValueConverter, converterParams?: any): ObjectBinding
+        bindTo(parent, path?: string, converter?: IValueConverter, converterParams?: any): ObjectBinding
+        bindArrayToState?(data, key: string, path?: string, converter?: IValueConverter, converterParams?: any): ArrayBinding
+        bindArrayTo(parent, path?: string, converter?: IValueConverter, converterParams?: any): ArrayBinding
     }
     export interface Binding {
-        value: any;
         path?: string;
+        parent: Binding;
+        root:Binding;
     }
-    export interface ArrayBinding {
-        items: Array<Binding>;
-        path?: string;
-        add(defautItem?: any): any;
-        remove(itemToRemove: any): any;
-        splice(start: number, deleteCount: number, elementsToAdd?: any): any;
-        move(x: number, y: number): any;
+    export interface ObjectBinding extends Binding {
+        value: any;
+    }
+    export interface ArrayBinding extends Binding {
+        items: Array<ObjectBinding>;
+        add(defautItem?: any);
+        remove(itemToRemove: any);
+        splice(start: number, deleteCount: number, elementsToAdd?: any);
+        move(x: number, y: number);
     }
 
     /**

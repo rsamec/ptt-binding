@@ -8,6 +8,7 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 const Binder: Bind.BinderStatic = require('react-binding/lib/MobxBinder').default;
+const SimpleBinder: Bind.BinderStatic = require('react-binding').default;
 var Freezer = require('freezer-js');
 import { reaction } from 'mobx';
 
@@ -39,7 +40,7 @@ describe('person binding', () => {
       var lastName = Binder.bindTo(person, "LastName");
 
       //exec
-      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,reaction);
+      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,Binder,reaction);
 
 
       //verify
@@ -61,7 +62,7 @@ describe('person binding', () => {
       var lastName = Binder.bindTo(person, "LastName");
 
       //exec
-      initBindings(new simpleCursor<PTT.Container>(frozenSchema), frozenSchema, dataContext);
+      initBindings(new simpleCursor<PTT.Container>(frozenSchema), frozenSchema, dataContext,SimpleBinder);
 
 
       //verify
@@ -100,7 +101,7 @@ describe('person binding', () => {
       var lastName = Binder.bindTo(person, "LastName");
 
       //exec
-      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,reaction);
+      initBindings(new freezerCursor<PTT.Container>(frozenSchema), frozenSchema.get(), dataContext,Binder,reaction);
 
       firstName.value = "John";
       lastName.value = "Smith";

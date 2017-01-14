@@ -1,7 +1,7 @@
 /// <reference path="../src/types/DataBinding.d.ts" />
 
 import * as _ from 'lodash';
-var Binder: Bind.BinderStatic = require('react-binding/lib/MobxBinder').default;
+//var Binder: Bind.BinderStatic = require('react-binding/lib/MobxBinder').default;
 
 const CONTAINER_NAME = "Container";
 const REPEATER_CONTAINER_NAME = "Repeater";
@@ -14,10 +14,10 @@ const ITEMS_INDEX_KEY = "index";
 declare type Reaction = (expression: () => any,effect: (arg: any, r: { dispose: () => void}) => void, fireImmediately?: boolean) => void
 const EMPTY_REACTION:Reaction = () => {}
 
-export function initBindings(provider: Cursor.Provider<PTT.Container>, frozenSchema: PTT.Container, dataBinder: any, reaction?:Reaction, cursor?: Cursor.Path) {
+export function initBindings(provider: Cursor.Provider<PTT.Container>, frozenSchema: PTT.Container, dataContext: Bind.ObjectBinding,binder:Bind.BinderStatic, reaction?:Reaction, cursor?: Cursor.Path) {
 
 	if (frozenSchema === undefined) return;
-	if (dataBinder === undefined) return;
+	if (dataContext === undefined) return;
 
 	if (reaction === undefined) reaction = EMPTY_REACTION;
 	if (cursor === undefined) cursor = [];
@@ -25,16 +25,16 @@ export function initBindings(provider: Cursor.Provider<PTT.Container>, frozenSch
 	var ctx = (frozenSchema.props && frozenSchema.props && frozenSchema.props['context']) || {};
 	var code = ctx['code'] && ctx['code'].compiled;
 	if (!!code) {
-		dataBinder.customCode = eval(code);
+		dataContext["customCode"] = eval(code);
 	}
 
 	trav(frozenSchema, function (x, cursor) {
 
 		// bind container
-		bindContainer(x, provider.newCursor<PTT.Container>(cursor), dataBinder,reaction);
+		bindContainer(x, provider.newCursor<PTT.Container>(cursor), dataContext,binder,reaction);
 
 		// bind boxes
-		bindBoxes(x, provider.newCursor<PTT.Container>(cursor), dataBinder,reaction);
+		bindBoxes(x, provider.newCursor<PTT.Container>(cursor), dataContext,binder,reaction);
 
 	}, cursor);
 }
@@ -48,7 +48,7 @@ var trav = function (container: PTT.Container, fce: (currentNode: PTT.Container,
 		trav(containers[i], fce, cursor.concat([i]));
 	}
 }
-var bindBoxes = (x: PTT.Container, cursor: Cursor.Provider<PTT.Node>, dataBinder: Bind.BinderStatic,reaction:Reaction) => {
+var bindBoxes = (x: PTT.Container, cursor: Cursor.Provider<PTT.Node>, dataContext:Bind.ObjectBinding,binder: Bind.BinderStatic,reaction:Reaction) => {
 	// bind boxes
 	if (x.boxes === undefined || x.boxes.length === 0) return;
 
@@ -59,19 +59,18 @@ var bindBoxes = (x: PTT.Container, cursor: Cursor.Provider<PTT.Node>, dataBinder
 		//console.log(cursor.path.concat(["boxes", i]));
 		
 		var updated:PTT.Node = box.props === undefined ? (cursor.newCursor<PTT.Node>(["boxes",i]).set('props', {})) : box;
-		//console.log(updated);
 		//var updated = box.props === undefined ? box.set('props', {}) : box;
-		bindProps(updated, cursor.newCursor<PTT.Node>(["boxes", i, "props"]), dataBinder, false,reaction);
+		bindProps(updated, cursor.newCursor<PTT.Node>(["boxes", i, "props"]), dataContext, binder,false,reaction);
 	}
 }
-var bindContainer = (x: PTT.Container, cursor: Cursor.Provider<PTT.Container>, dataBinder: Bind.BinderStatic,reaction:Reaction) => {
+var bindContainer = (x: PTT.Container, cursor: Cursor.Provider<PTT.Container>, dataContext: Bind.ObjectBinding,binder: Bind.BinderStatic,reaction:Reaction) => {
 
 	var visibilityBinding = x.bindings && x.bindings[VISIBILITY_KEY];
 
 	if (visibilityBinding !== undefined) {
 		if (!!!visibilityBinding.path) return;
 
-		let binding = getValueBinding(dataBinder, visibilityBinding);
+		let binding = getValueBinding(dataContext,binder, visibilityBinding);
 		let newCursor = cursor.newCursor(["props"]);
 
 		// create reaction when binding.value changed
@@ -83,31 +82,31 @@ var bindContainer = (x: PTT.Container, cursor: Cursor.Provider<PTT.Container>, d
 	}
 
 	if (x.elementName === REPEATER_CONTAINER_NAME) {
-
+		var clonedRepeater = _.cloneDeep(x);
 		cursor.set("containers", []);
 
 		var itemsBinding = x.bindings && x.bindings[ITEMS_KEY];
 		if (!!!itemsBinding.path) return;
 
-		let binding = getValueBinding(dataBinder, itemsBinding);
+		let binding = getValueBinding(dataContext, binder,itemsBinding);
 
 		let rowsToRemove = 1; // default is 1=the repetaer itself
 		var lastRange: any[] = [];
 
 		let repeaterReaction = (dataLength: number) => {
-			var currentContainers = cursor.get("containers");
+			var currentContainers = cursor.get('containers');
 			if (currentContainers === undefined) return;
 
 			var currentLength = currentContainers.length;
 			if (currentLength === dataLength) return;
 
-			// console.log("reaction Length: " + dataLength + " != " + currentLength);
+			//console.log("reaction Length: " + dataLength + " != " + currentLength);
 
 			if (dataLength > currentLength) {
 
 				// add rows				
 				let range = { from: currentLength, to: dataLength };
-				repeatContainers(range, x, cursor, binding,reaction);
+				repeatContainers(range,clonedRepeater, cursor, binding,binder,reaction);
 
 			}
 			else {
@@ -126,12 +125,11 @@ var bindContainer = (x: PTT.Container, cursor: Cursor.Provider<PTT.Container>, d
 		var box = containers[i];
 		if (box.bindings === undefined) continue;
 		var updated = box.props === undefined ? (cursor.newCursor<PTT.Container>(["containers",i]).set('props', {})) : box;
-		//console.log(updated);
 		//var updated = box.props === undefined ? box.set('props', {}) : box;
-		bindProps(updated, cursor.newCursor<any>(["containers", i, "props"]), dataBinder, false,reaction);
+		bindProps(updated, cursor.newCursor<any>(["containers", i, "props"]), dataContext,binder, false,reaction);
 	}
 }
-var repeatContainers = (range: { from: number, to: number }, x: PTT.Container, cursor: Cursor.Provider<PTT.Container>, binding: any,reaction:Reaction): void => {
+var repeatContainers = (range: { from: number, to: number }, x: PTT.Container, cursor: Cursor.Provider<PTT.Container>, binding: Bind.ObjectBinding,binder:Bind.BinderStatic,reaction:Reaction): void => {
 	let clonedRows: PTT.Container[] = [];
 	// for each row - deep clone row template
 	for (let i = range.from; i != range.to; i++) {
@@ -144,17 +142,21 @@ var repeatContainers = (range: { from: number, to: number }, x: PTT.Container, c
 		clonedRows.push(clonedRow);
 	}
 	let containers = cursor.get("containers");
+	
 	var updated = containers.splice(range.from, 0, ...clonedRows);
+	//TODO:better implementation ->  fix for plain js objects - freezer returns updated parents, but plain js objects return removed rows
+	if (updated.length === 0) updated = containers;
 
-	var rootArrayBinding = Binder.bindArrayTo(binding, undefined, binding.valueConverter);
+	var rootArrayBinding = binder.bindArrayTo(binding, undefined, binding["valueConverter"]);
 	let dataItems = rootArrayBinding.items;
+	dataItems["customCode"] = binding["customCode"];
 
 	for (let i = range.from; i != range.to; i++) {
-		initBindings(cursor, updated[i], dataItems[i],reaction, ["containers", i]);
+		initBindings(cursor, updated[i], dataItems[i],binder,reaction, ["containers", i]);
 	}
 
 }
-var bindProps = (box: PTT.Node, cursor: Cursor.Provider<PTT.Node>, dataBinder: Bind.BinderStatic, isDesignMode: boolean,reaction:Reaction) => {
+var bindProps = (box: PTT.Node, cursor: Cursor.Provider<PTT.Node>, dataContext: Bind.ObjectBinding, binder:Bind.BinderStatic, isDesignMode: boolean,reaction:Reaction) => {
 	if (box === undefined) return;
 
 	let bindings = box.bindings;
@@ -179,13 +181,13 @@ var bindProps = (box: PTT.Node, cursor: Cursor.Provider<PTT.Node>, dataBinder: B
 
 		var isArrayBinding = bindingProps.mode ==='OneTime'; 
 		// apply binding		
-		let binding = isArrayBinding? getArrayBinding(dataBinder, bindingProps): getValueBinding(dataBinder, bindingProps);
+		let binding = isArrayBinding? getArrayBinding(dataContext, binder,bindingProps): getValueBinding(dataContext,binder, bindingProps);
 
 		if (!isDesignMode && (bindingProps.mode === 'TwoWay' || bindingProps.mode === 'OneTime')) {
 			//apply two-way binding
 			cursor.set("valueLink", binding);
 		}
-				
+
 		// create reaction when binding.value changed
 		let setValueReaction = (val: any) => {
 			//console.log(cursor.path.join(".") +" , " + propName + " = " + val);			
@@ -193,7 +195,7 @@ var bindProps = (box: PTT.Node, cursor: Cursor.Provider<PTT.Node>, dataBinder: B
 		}
 		if (getBinding(binding, bindingProps)){
 			setValueReaction(binding.value)
-			reaction(() => (<Bind.Binding>binding).value, setValueReaction,false);
+			reaction(() => (<Bind.ObjectBinding>binding).value, setValueReaction,false);
 		}
 		else{
 			setValueReaction(binding.items)
@@ -203,14 +205,14 @@ var bindProps = (box: PTT.Node, cursor: Cursor.Provider<PTT.Node>, dataBinder: B
 
 	return props;
 }
-var getConverter = (dataBinder: Bind.BinderStatic, bindingProps: any) => {
+var getConverter = (dataContext: Bind.ObjectBinding, bindingProps: any) => {
 	var converter: any;
 	if (!!bindingProps.converter && !!bindingProps.converter.compiled) {
 		converter = eval(bindingProps.converter.compiled);
 
 		if (typeof converter === 'string' || converter instanceof String) {
-
-			var sharedConverter = (<any>dataBinder)["customCode"] && (<any>dataBinder)["customCode"][<any>converter];
+			var rootContext:any = dataContext.root;
+			var sharedConverter = rootContext["customCode"] && rootContext["customCode"][<any>converter];
 			if (sharedConverter === undefined) return;
 			converter = sharedConverter;
 		}
@@ -219,14 +221,14 @@ var getConverter = (dataBinder: Bind.BinderStatic, bindingProps: any) => {
 
 }
 
-var getBinding = (binding : Bind.ArrayBinding | Bind.Binding, bindingProps:any): binding is Bind.Binding => {
+var getBinding = (binding : Bind.ArrayBinding | Bind.ObjectBinding, bindingProps:any): binding is Bind.ObjectBinding => {
 	return bindingProps.mode !== 'OneTime';
 }
-var getValueBinding = (dataBinder: Bind.BinderStatic, bindingProps: any) => {
-	var converter = getConverter(dataBinder, bindingProps);
-	return Binder.bindTo(dataBinder, bindingProps.path, converter, bindingProps.converterArgs);
+var getValueBinding = (dataContext:Bind.ObjectBinding,binder: Bind.BinderStatic, bindingProps: any) => {
+	var converter = getConverter(dataContext, bindingProps);
+	return binder.bindTo(dataContext, bindingProps.path, converter, bindingProps.converterArgs);
 }
-var getArrayBinding = (dataBinder: Bind.BinderStatic, bindingProps: any) => {
-	var converter = getConverter(dataBinder, bindingProps);
-	return Binder.bindArrayTo(dataBinder, bindingProps.path, converter, bindingProps.converterArgs);
+var getArrayBinding = (dataContext:Bind.ObjectBinding,binder: Bind.BinderStatic, bindingProps: any) => {
+	var converter = getConverter(dataContext, bindingProps);
+	return binder.bindArrayTo(dataContext, bindingProps.path, converter, bindingProps.converterArgs);
 }
